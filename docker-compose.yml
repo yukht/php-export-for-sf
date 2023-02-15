@@ -1,0 +1,54 @@
+version: "3.9"
+services:
+  web-swiftmailer:
+    container_name: web-swiftmailer
+    image: nginx:1.22-alpine
+    stdin_open: true
+    extra_hosts:
+      - "php-fpm:172.19.0.3"
+    ports:
+      - 8980:80
+    volumes:
+      - 'web_templates:/etc/nginx/templates'
+      - 'php_data:/var/www'
+    environment:
+      - SERVER_NAME=web
+      - PORT=80
+    networks:
+      phpnet:
+        ipv4_address: 172.19.0.2
+
+  php-swiftmailer:
+    container_name: php-swiftmailer
+    image: php-fpm-7.4-custom:0.2        # create new image base from php:7.4-fpm
+    build:
+      context: ./build
+      dockerfile: Dockerfile
+    stdin_open: true
+    volumes:
+      - 'php_data:/var/www'
+    networks:
+      phpnet:
+        ipv4_address: 172.19.0.3
+
+networks:
+  phpnet:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.19.0.0/24
+          gateway: 172.19.0.1
+
+volumes:
+  php_data:
+    driver: local
+    driver_opts:
+      type: 'volume'
+      o: 'bind'
+      device: './data'
+  web_templates:
+    driver: local
+    driver_opts:
+      type: 'volume'
+      o: 'bind'
+      device: './templates'
